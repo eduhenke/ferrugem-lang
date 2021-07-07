@@ -1,7 +1,7 @@
 use logos::{Logos, SpannedIter};
 
-#[derive(Logos, Debug, PartialEq, Clone, Copy)]
-pub enum Token {
+#[derive(Logos, Debug, PartialEq)]
+pub enum Token<'a> {
     #[token("def")]
     FunctionKeyword,
     #[token("int")]
@@ -71,13 +71,13 @@ pub enum Token {
     #[token("%")]
     Mod,
     #[regex("[[:alpha:]_][[:word:]]*")]
-    Identifier,
-    #[regex("\\d\\d*\\.\\d\\d*")]
-    FloatConstant,
-    #[regex("\\d\\d*")]
-    IntegerConstant,
+    Identifier(&'a str),
+    #[regex("\\d\\d*\\.\\d\\d*", |lex| lex.slice().parse())]
+    FloatConstant(f64),
+    #[regex("\\d\\d*", |lex| lex.slice().parse())]
+    IntegerConstant(i64),
     #[regex("\"[^\"]*\"")]
-    StringConstant,
+    StringConstant(&'a str),
 
     #[error]
     // We can also use this variant to define whitespace,
@@ -102,7 +102,7 @@ mod tests {
             result,
             &[
                 FunctionKeyword,
-                Identifier,
+                Identifier("foo"),
                 OpenParenthesis,
                 CloseParenthesis,
                 OpenBraces,
@@ -115,20 +115,20 @@ mod tests {
     fn lex_function_error() {
         let result: Vec<_> = Token::lexer("def foo^").collect();
 
-        assert_eq!(result, &[FunctionKeyword, Identifier, Error]);
+        assert_eq!(result, &[FunctionKeyword, Identifier("foo"), Error]);
     }
 
     #[test]
     fn lex_int() {
         let result: Vec<_> = Token::lexer("123").collect();
 
-        assert_eq!(result, &[IntegerConstant]);
+        assert_eq!(result, &[IntegerConstant(123)]);
     }
 
     #[test]
     fn lex_float() {
         let result: Vec<_> = Token::lexer("123.22").collect();
 
-        assert_eq!(result, &[FloatConstant]);
+        assert_eq!(result, &[FloatConstant(123.22)]);
     }
 }
