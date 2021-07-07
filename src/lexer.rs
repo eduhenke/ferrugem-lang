@@ -2,6 +2,32 @@ use logos::{Logos, SpannedIter};
 
 #[derive(Logos, Debug, PartialEq, Clone, Copy)]
 pub enum Token {
+    #[token("def")]
+    FunctionKeyword,
+    #[token("int")]
+    IntType,
+    #[token("float")]
+    FloatType,
+    #[token("string")]
+    String,
+    #[token("print")]
+    Print,
+    #[token("read")]
+    Read,
+    #[token("return")]
+    Return,
+    #[token("for")]
+    For,
+    #[token("break")]
+    Break,
+    #[token("if")]
+    If,
+    #[token("else")]
+    Else,
+    #[token("new")]
+    New,
+    #[token("null")]
+    Null,
     #[token(",")]
     Comma,
     #[token(":")]
@@ -12,23 +38,46 @@ pub enum Token {
     OpenParenthesis,
     #[token(")")]
     CloseParenthesis,
+    #[token("[")]
+    OpenBracket,
+    #[token("]")]
+    CloseBracket,
     #[token("{")]
     OpenBraces,
     #[token("}")]
     CloseBraces,
-    #[token("=")]
+    #[token("<=")]
+    LessThanEqual,
+    #[token(">=")]
+    BiggerThanEqual,
+    #[token("==")]
     Equals,
-    #[token("break")]
-    Break,
-    #[token("def")]
-    FunctionKeyword,
+    #[token("!=")]
+    DiffentThan,
+    #[token("<")]
+    LessThan,
+    #[token(">")]
+    BiggerThan,
+    #[token("=")]
+    Atribuition,
+    #[token("+")]
+    Addition,
+    #[token("-")]
+    Subtraction,
+    #[token("*")]
+    Multiplication,
+    #[token("/")]
+    Division,
+    #[token("%")]
+    Mod,
     #[regex("[[:alpha:]_][[:word:]]*")]
     Identifier,
-
-    #[regex("AAAAAA")]
+    #[regex("\\d\\d*\\.\\d\\d*")]
     FloatConstant,
-    #[regex("[[:digit:]][[:digit:]_]*([[:alpha:]][[:word:]]*)?")]
+    #[regex("\\d\\d*")]
     IntegerConstant,
+    #[regex("\"[^\"]*\"")]
+    StringConstant,
 
     #[error]
     // We can also use this variant to define whitespace,
