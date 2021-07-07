@@ -1,0 +1,107 @@
+{
+  print "Bem vindo, aqui voce pode calcular o indice de massa corporal";
+  
+  string nome;
+  float peso;
+  float altura;
+  float imc;
+  int estadoNutricionalOp;
+  int continua;
+
+  int i;
+  for (i = 0; i < 2; i = i)
+  {
+    print "Primeiramente, digite seu nome";
+    read nome;
+
+    print "Digite seu peso em kg, por exemplo: 70.56";
+    read peso;
+    
+    print "Agora digite sua altura em metros, por exemplo: 1.74";
+    read altura;
+
+    imc = peso / (altura * altura);
+
+    print nome;
+    print "seu indice de imc eh: ";
+    print imc;
+    
+    print "Deseja saber em qual estado nutricional se encaixa? Se sim, digite 1, senao digite 0";
+    
+    if (estadoNutricionalOp == 1)
+    {
+      if (imc < 10)
+      {
+        print "Seu estado nutricional eh: Desnutricao grau V";
+      }
+      else
+      {
+        if (imc < 13)
+        {
+          print "Seu estado nutricional eh: Desnutricao grau IV";
+        }
+        else
+        {
+          if (imc < 16)
+          {
+            print "Seu estado nutricional eh: Desnutricao grau III";
+          }
+          else
+          {
+            if (imc < 17)
+            {
+              print "Seu estado nutricional eh: Desnutricao grau II";
+            }
+            else
+            {
+              if (imc < 18.5)
+              {
+                print "Seu estado nutricional eh: Desnutricao grau I";
+              }
+              else
+              {
+                if (imc < 25)
+                {
+                  print "Seu estado nutricional eh: Normal";
+                }
+                else
+                {
+                  if (imc < 30)
+                  {
+                    print "Seu estado nutricional eh: Pre-obesidade";
+                  }
+                  else
+                  {
+                    if (imc < 35)
+                    {
+                      print "Seu estado nutricional eh: Obesidade grau I";
+                    }
+                    else
+                    {
+                      if (imc < 40)
+                      {
+                        print "Seu estado nutricional eh: Obesidade grau II";
+                      }
+                      else
+                      {
+                        print "Seu estado nutricional eh: Obesidade grau III";
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    print "Deseja calcular mais um indice de massa corporal? Se sim, digite 1, senao digite 0";
+    read continua;
+
+    if (continua == 0)
+    {
+      break;
+    }
+  }
+}
