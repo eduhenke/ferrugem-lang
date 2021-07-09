@@ -1,7 +1,27 @@
-use logos::{Logos, SpannedIter};
+use std::usize;
 
-#[derive(Logos, Debug, PartialEq)]
-pub enum Token<'a> {
+use codespan_reporting::diagnostic::{Diagnostic, Label};
+use logos::{Logos, Span, SpannedIter};
+
+#[derive(Debug, Clone)]
+pub enum LexicalError<'source> {
+    InvalidSymbol(Token<'source>),
+}
+
+impl<'source> LexicalError<'source> {
+    pub fn to_diagnostic(&self) -> Diagnostic<usize> {
+        match self.clone() {
+            LexicalError::InvalidSymbol(token) => Diagnostic::error()
+                .with_message("lexical error")
+                .with_labels(vec![
+                    Label::primary(token.file_id, token.span).with_message("invalid symbol")
+                ]),
+        }
+    }
+}
+
+#[derive(Logos, Debug, PartialEq, Clone, Copy)]
+pub enum TokenKind<'a> {
     #[token("def")]
     FunctionKeyword,
     #[token("int")]
@@ -86,18 +106,53 @@ pub enum Token<'a> {
     Error,
 }
 
-pub fn lex<'source>(source: &'source str) -> SpannedIter<'source, Token> {
-    Token::lexer(source).spanned()
+#[derive(Debug, PartialEq, Clone)]
+pub struct Token<'source> {
+    kind: TokenKind<'source>,
+    span: Span,
+    file_id: usize,
+}
+
+impl<'source> Token<'source> {
+    pub fn to_error(self) -> Option<LexicalError<'source>> {
+        match self.kind {
+            TokenKind::Error => Some(LexicalError::InvalidSymbol(self)),
+            _ => None,
+        }
+    }
+}
+
+pub struct Lexer<'source> {
+    file_id: usize,
+    iter: SpannedIter<'source, TokenKind<'source>>,
+}
+
+impl<'source> Lexer<'source> {
+    pub fn new(source: &'source str, file_id: usize) -> Self {
+        let iter = TokenKind::lexer(source).spanned();
+        Lexer { file_id, iter }
+    }
+}
+impl<'source> Iterator for Lexer<'source> {
+    type Item = Token<'source>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|(token, span)| Token {
+            file_id: self.file_id,
+            kind: token,
+            span,
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Token::*;
+    use TokenKind::*;
 
     #[test]
     fn lex_function() {
-        let result: Vec<_> = Token::lexer("def foo() {}").collect();
+        let result: Vec<_> = TokenKind::lexer("def foo() {}").collect();
         assert_eq!(
             result,
             &[
@@ -113,21 +168,21 @@ mod tests {
 
     #[test]
     fn lex_function_error() {
-        let result: Vec<_> = Token::lexer("def foo^").collect();
+        let result: Vec<_> = TokenKind::lexer("def foo^").collect();
 
         assert_eq!(result, &[FunctionKeyword, Identifier("foo"), Error]);
     }
 
     #[test]
     fn lex_int() {
-        let result: Vec<_> = Token::lexer("123").collect();
+        let result: Vec<_> = TokenKind::lexer("123").collect();
 
         assert_eq!(result, &[IntegerConstant(123)]);
     }
 
     #[test]
     fn lex_float() {
-        let result: Vec<_> = Token::lexer("123.22").collect();
+        let result: Vec<_> = TokenKind::lexer("123.22").collect();
 
         assert_eq!(result, &[FloatConstant(123.22)]);
     }
