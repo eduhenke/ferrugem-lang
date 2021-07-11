@@ -1,0 +1,109 @@
+{
+  print "Bem vindo a feira do Zeca, voce pode comprar no maximo 20 produtos\n";
+
+  int opProduto;
+  string produtos[20];
+  float soma;
+  int quantidadeProdutos;
+  int continua;
+  int i;
+
+  soma = 0;
+  quantidadeProdutos = 0;
+  
+  for (i = 0; i < 20; i = i + 1)
+  {
+    print "------ Lista de Produtos ------";
+    print "0 - Abobora - 3 reais";
+    print "1 - Abacaxi - 4 reais";
+    print "2 - Banana - 1 real";
+    print "3 - Cenoura - 0.80 real";
+    print "4 - Chuchu - 0.70 real";
+    print "5 - Ervilhas - 2 reais";
+    print "6 - Limao - 2.20 reais";
+    print "7 - Milho - 4.50 reais";
+    print "8 - Pessego - 1.50 real";
+    print "9 - Uva - 3.20 reais";
+
+    quantidadeProdutos = quantidadeProdutos + 1;
+    
+    print "Digite o produto que voce quer comprar: ";
+    read opProduto;
+
+    if (opProduto == 0)
+    {
+      produtos[i] = "Abobora - 3 reais";
+      soma = soma + 3;
+    }
+
+    if (opProduto == 1)
+    {
+      produtos[i] = "Abacaxi - 4 reais";
+      soma = soma + 4;
+    }
+    
+    if (opProduto == 2)
+    {
+      produtos[i] = "Banana - 1 real";
+      soma = soma + 1;
+    }
+    
+    if (opProduto == 3)
+    {
+      produtos[i] = "Cenoura - 0.80 real";
+      soma = soma + 0.8;
+    }
+    
+    if (opProduto == 4)
+    {
+      produtos[i] = "Chuchu - 0.70 real";
+      soma = soma + 0.7;
+    }
+    
+    if (opProduto == 5)
+    {
+      produtos[i] = "Ervilhas - 2 reais";
+      soma = soma + 2;
+    }
+    
+    if (opProduto == 6)
+    {
+      produtos[i] = "Limao - 2.20 reais";
+      soma = soma + 2.2;
+    }
+    
+    if (opProduto == 7)
+    {
+      produtos[i] = "Milho - 4.50 reais";
+      soma = soma + 4.5;
+    }
+    
+    if (opProduto == 8)
+    {
+      produtos[i] = "Pessego - 1.50 real";
+      soma = soma + 1.5;
+    }
+    
+    if (opProduto == 9)
+    {
+      produtos[i] = "Uva - 3.20 reais";
+      soma = soma + 3.2;
+    }
+
+    print "Deseja continuar comprando? Se sim, digite 1, senao digite 0";
+    read continua;
+
+    if (continua == 0)
+    {
+      break;
+    }
+  }
+
+  print "Produtos comprados:";
+  for (i = 0; i < quantidadeProdutos; i = i + 1)
+  {
+    print produtos[i];
+  }
+
+  print "Total da sua compra foi:" + soma + "reais";
+}

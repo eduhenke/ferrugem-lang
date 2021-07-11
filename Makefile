@@ -9,5 +9,11 @@ run_lex_error:
 run_imc:
 	@cargo run -q examples/imc.lcc
 
+run_feira:
+	@cargo run -q examples/feira.lcc
+
+run_matriz:
+	@cargo run -q examples/matriz.lcc
+
 test:
 	@cargo test
