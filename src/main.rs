@@ -4,9 +4,9 @@ use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use lexer::Lexer;
+use std::collections::HashMap;
 use std::fs;
 use structopt::StructOpt;
-use std::collections::HashMap;
 
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(StructOpt)]
@@ -41,14 +41,15 @@ fn main() {
     let mut symbol_table: HashMap<String, i32> = HashMap::new();
 
     for token in result {
-        if symbol_table.contains_key(&token.get_kind().to_string()) {
-            symbol_table.insert(token.get_kind().to_string(), 2);
-        } else {
-            symbol_table.insert(token.get_kind().to_string(), 1);
+        match token.kind {
+            lexer::TokenKind::Identifier(name) => {
+                *symbol_table.entry(name.to_string()).or_insert(0) += 1;
+            }
+            _ => {}
         }
 
-        println!("{:?}", token.get_kind());
-        
+        println!("{:?}", token.kind);
+
         token
             .to_error()
             .map(|err| err.to_diagnostic())

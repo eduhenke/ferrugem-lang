@@ -1,4 +1,4 @@
-use std::{fmt, usize};
+use std::usize;
 
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use logos::{Logos, Span, SpannedIter};
@@ -106,17 +106,11 @@ pub enum TokenKind<'a> {
     Error,
 }
 
-impl fmt::Display for TokenKind<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({})", self)
-    }
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token<'source> {
-    kind: TokenKind<'source>,
+    pub kind: TokenKind<'source>,
     span: Span,
-    file_id: usize,    
+    file_id: usize,
 }
 
 impl<'source> Token<'source> {
@@ -125,9 +119,6 @@ impl<'source> Token<'source> {
             TokenKind::Error => Some(LexicalError::InvalidSymbol(self)),
             _ => None,
         }
-    }
-    pub fn get_kind(&self) -> &TokenKind<'source> {
-        &self.kind
     }
 }
 
