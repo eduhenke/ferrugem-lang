@@ -6,6 +6,7 @@ use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use lexer::Lexer;
 use std::fs;
 use structopt::StructOpt;
+use std::collections::HashMap;
 
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(StructOpt)]
@@ -37,13 +38,27 @@ fn main() {
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let config = codespan_reporting::term::Config::default();
 
+    let mut symbol_table: HashMap<String, i32> = HashMap::new();
+
     for token in result {
-        println!("{:?}", token);
+        if symbol_table.contains_key(&token.get_kind().to_string()) {
+            symbol_table.insert(token.get_kind().to_string(), 2);
+        } else {
+            symbol_table.insert(token.get_kind().to_string(), 1);
+        }
+
+        println!("{:?}", token.get_kind());
+        
         token
             .to_error()
             .map(|err| err.to_diagnostic())
             .map(|diagnostic| {
                 term::emit(&mut writer.lock(), &config, &files, &diagnostic).unwrap()
             });
+    }
+
+    println!("-----------------------------");
+    for (key, value) in symbol_table.iter() {
+        println!("{} - {}", key, value);
     }
 }
