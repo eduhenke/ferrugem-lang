@@ -10,4 +10,4 @@ run_imc:
 	@cargo run -q examples/imc.lcc
 
 test:
-	@cargo test
+	@cargo test -- --show-output

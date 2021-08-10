@@ -108,16 +108,25 @@ pub enum TokenKind<'a> {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token<'source> {
-    kind: TokenKind<'source>,
-    span: Span,
-    file_id: usize,
+    pub kind: TokenKind<'source>,
+    pub span: Span,
+    pub file_id: usize,
 }
+
+pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 
 impl<'source> Token<'source> {
     pub fn to_error(self) -> Option<LexicalError<'source>> {
         match self.kind {
             TokenKind::Error => Some(LexicalError::InvalidSymbol(self)),
             _ => None,
+        }
+    }
+
+    pub fn to_spanned(self) -> Spanned<TokenKind<'source>, usize, LexicalError<'source>> {
+        match self.kind {
+            TokenKind::Error => Err(self.to_error().unwrap()),
+            kind => Ok((self.span.start, kind, self.span.end)),
         }
     }
 }

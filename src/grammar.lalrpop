@@ -1,0 +1,68 @@
+use crate::lexer::*;
+use crate::parser::*;
+
+grammar<'input>(input: &'input str);
+
+pub Expr: Box<Expr<'input>> = {
+    <lhs: Expr> <op: ExprOp> <rhs: Factor> => Box::new(Expr::Op{<>}),
+    Factor,
+    IfExpression,
+};
+
+ExprOp: Opcode = {
+    Add => Opcode::Add,
+    Sub => Opcode::Sub,
+};
+
+Factor: Box<Expr<'input>> = {
+    <lhs: Factor> <op: FactorOp> <rhs: Term> => Box::new(Expr::Op{<>}),
+    Term,
+};
+
+FactorOp: Opcode = {
+    MulTIP => Opcode::Mul,
+    DivISI => Opcode::Div,
+};
+
+Term: Box<Expr<'input>> = {
+    Num => Box::new(Expr::Number(<>)), // (4)
+    OpPar <Expr> ClPar
+};
+
+// if true { 3 + 4 }
+//        IF
+//      /   \
+//  true     +
+//          / \
+//         3  4
+IfExpression: Box<Expr<'input>> = {
+    IfKw <cond: Expr> OpBr <th: Expr> ClBr => {
+        let a = 3;
+        let b = a * 4;
+        let if_expr = Expr::If { condition: cond, then_expr: th };
+        Box::new(if_expr)
+    }
+};
+
+
+extern {
+    type Location = usize;
+    type Error = LexicalError<'input>;
+    
+    // all lexemes(terminals)
+    enum TokenKind<'input> {
+        FnKw => TokenKind::FunctionKeyword,
+        Id => TokenKind::Identifier(<&'input str>),
+        Num => TokenKind::IntegerConstant(<i64>),
+        OpPar => TokenKind::OpenParenthesis,
+        ClPar => TokenKind::CloseParenthesis,
+        OpBr => TokenKind::OpenBraces,
+        ClBr => TokenKind::CloseBraces,
+        Add => TokenKind::Addition,
+        Sub => TokenKind::Subtraction,
+        MulTIP => TokenKind::Multiplication,
+        DivISI => TokenKind::Division,
+        IfKw => TokenKind::If,
+        ElseKw => TokenKind::Else,
+    }
+}
