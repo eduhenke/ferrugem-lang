@@ -183,7 +183,12 @@ mod tests {
     #[test]
     fn lex_float() {
         let result: Vec<_> = TokenKind::lexer("123.22").collect();
-
         assert_eq!(result, &[FloatConstant(123.22)]);
+    }
+
+    #[test]
+    fn lex_semi_keyword() {
+        let result: Vec<_> = TokenKind::lexer("defined").collect();
+        assert_eq!(result, &[Identifier("defined")]);
     }
 }
