@@ -1,4 +1,5 @@
 mod lexer;
+mod parser;
 
 use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term;
@@ -6,7 +7,8 @@ use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use lexer::Lexer;
 use std::fs;
 use structopt::StructOpt;
-
+#[macro_use]
+extern crate lalrpop_util;
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(StructOpt)]
 struct Cli {
@@ -37,6 +39,9 @@ fn main() {
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let config = codespan_reporting::term::Config::default();
 
+    // result.into_iter().map(|item| {
+    //     let c = item.span.start;
+    // });
     for token in result {
         println!("{:?}", token);
         token
