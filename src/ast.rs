@@ -27,10 +27,11 @@ pub enum Statement<'a> {
         false_path: Option<Box<Statement<'a>>>,
     },
     StatementList(Vec<Statement<'a>>),
-    Read(Expression<'a>),
+    Read(&'a str),
     Print(Expression<'a>),
     Return,
     Break,
+    Assignment(&'a str, Expression<'a>),
 }
 
 #[derive(Debug, PartialEq, Clone)]

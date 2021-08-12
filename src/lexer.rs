@@ -79,11 +79,11 @@ pub enum TokenKind<'a> {
     #[token(">")]
     GreaterThan,
     #[token("=")]
-    Atribuition,
+    Assignment,
     #[token("+")]
-    Addition,
+    Plus,
     #[token("-")]
-    Subtraction,
+    Minus,
     #[token("*")]
     Multiplication,
     #[token("/")]

@@ -10,6 +10,7 @@ pub PROGRAM: Program<'input> = {
 
 STATEMENT: Statement<'input> = {
     <VARDECL> ";",
+    <ATRIBSTAT> ";",
     <PRINTSTAT> ";",
     <READSTAT> ";",
     <RETURNSTAT> ";",
@@ -18,8 +19,14 @@ STATEMENT: Statement<'input> = {
     "break" ";" => Statement::Break,
 }
 
-VARDECL: Statement<'input> = {
-    TYPE "ident" ("int_constant"?) => Statement::VariableDeclaration(<>),
+VARDECL: Statement<'input> =
+    TYPE "ident" ("int_constant"?) => Statement::VariableDeclaration(<>);
+
+ATRIBSTAT: Statement<'input> = {
+    <LVALUE> "=" <EXPRESSION> => Statement::Assignment(<>),
+    // TODO: Missing
+    // LVALUE "=" ALLOCEXPRESSION,
+    // LVALUE "=" FUNCCALL,
 }
 
 // TODO: else
@@ -79,14 +86,11 @@ FACTOR: Expression<'input> = {
     "float_constant" => Expression::FloatLiteral(<>),
     "string_constant" => Expression::StringLiteral(<>),
     "null" => Expression::Null,
-    LVALUE,
+    LVALUE => Expression::NameReference(<>),
     "(" <NUMEXPRESSION> ")",
 }
 
-// TODO: TOTALLY WRONG
-LVALUE: Expression<'input> = {
-    "ident" => Expression::NameReference(<>),
-}
+LVALUE: &'input str = "ident" => <>;
 
 NATOP: BinOp = {
     "+" => BinOp::Add,
@@ -148,8 +152,8 @@ extern {
         ")" => TokenKind::CloseParenthesis,
         "{" => TokenKind::OpenBraces,
         "}" => TokenKind::CloseBraces,
-        "+" => TokenKind::Addition,
-        "-" => TokenKind::Subtraction,
+        "+" => TokenKind::Plus,
+        "-" => TokenKind::Minus,
         "*" => TokenKind::Multiplication,
         "/" => TokenKind::Division,
         "%" => TokenKind::Mod,
@@ -158,6 +162,7 @@ extern {
         "int" => TokenKind::IntType,
         "float" => TokenKind::FloatType,
         "string" => TokenKind::StringType,
+        "=" => TokenKind::Assignment,
 
         "if" => TokenKind::If,
         "else" => TokenKind::Else,

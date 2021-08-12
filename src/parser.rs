@@ -36,10 +36,10 @@ mod tests {
     #[test]
     fn parse_ifstat() {
         assert_eq!(
-            parse_str("if (3 >= 0) int a;"),
+            parse_str("if (-3 >= 0) int a;"),
             Statement(If {
                 condition: (Binary(
-                    Box::new(IntLiteral(3)),
+                    Box::new(Unary(Negative, Box::new(IntLiteral(3)))),
                     GreaterThanEqual,
                     Box::new(IntLiteral(0))
                 )),
@@ -51,10 +51,7 @@ mod tests {
 
     #[test]
     fn parse_read() {
-        assert_eq!(
-            parse_str("read nome;"),
-            Statement(Read(NameReference("nome")))
-        );
+        assert_eq!(parse_str("read nome;"), Statement(Read("nome")));
     }
     #[test]
     fn parse_return() {
@@ -69,6 +66,13 @@ mod tests {
                 Mul,
                 Box::new(IntLiteral(4))
             )))
+        );
+    }
+    #[test]
+    fn parse_attrib() {
+        assert_eq!(
+            parse_str("a = 3;"),
+            Statement(Assignment("a", IntLiteral(3)))
         );
     }
 }
