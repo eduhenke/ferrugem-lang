@@ -20,14 +20,26 @@ STATEMENT: Statement<'input> = {
     "break" ";" => Statement::Break,
 }
 
+TYPE: Type<'input> = {
+    "int" => Type::Int,
+    "float" => Type::Float,
+    "string" => Type::String,
+}
+
 VARDECL: Statement<'input> =
-    TYPE "ident" ("int_constant"?) => Statement::VariableDeclaration(<>);
+    TYPE "ident" ("[" "int_constant" "]")* => {
+        let (base_ty, ident, suffixes) = (<>);
+        let ty = suffixes
+            .iter()
+            .map(|(_, int, _)| *int)
+            .fold(base_ty, |ty, int| Type::Array(Box::new(ty), Box::new(Expression::IntLiteral(int))));
+        Statement::VariableDeclaration(ty, ident)
+    };
 
 ATRIBSTAT: Statement<'input> = {
     <LVALUE> "=" <EXPRESSION> => Statement::Assignment(<>),
-    // TODO: Missing
-    // LVALUE "=" ALLOCEXPRESSION,
-    // LVALUE "=" FUNCCALL,
+    <LVALUE> "=" <FUNCCALL> => Statement::Assignment(<>),
+    <LVALUE> "=" <ALLOCEXPRESSION> => Statement::Assignment(<>),
 }
 
 // TODO: else
@@ -98,11 +110,31 @@ FACTOR: Expression<'input> = {
     "float_constant" => Expression::FloatLiteral(<>),
     "string_constant" => Expression::StringLiteral(<>),
     "null" => Expression::Null,
-    LVALUE => Expression::NameReference(<>),
+    LVALUE => Expression::LValue(Box::new(<>)),
     "(" <NUMEXPRESSION> ")",
 }
 
-LVALUE: &'input str = "ident" => <>;
+LVALUE: LValue<'input> =
+    "ident" ("[" NUMEXPRESSION "]")* => {
+        let (id, arr_accesses) = (<>);
+        let initial_lval = LValue::NameReference(id);
+        arr_accesses
+            .iter()
+            .map(|(_, arr_access, _)| arr_access)
+            .fold(initial_lval, |lval, numexpr|
+                LValue::ArrayAccess(Box::new(lval), Box::new(numexpr.to_owned()))
+            )
+    };
+
+ALLOCEXPRESSION: Expression<'input> = 
+    "new" TYPE ("[" NUMEXPRESSION "]")+ => {
+        let (_, base_ty, suffixes) = (<>);
+        let ty = suffixes
+            .iter()
+            .map(|(_, int, _)| int)
+            .fold(base_ty, |ty, int| Type::Array(Box::new(ty), Box::new(int.to_owned())));
+        Expression::Alloc(ty)
+    };
 
 NATOP: BinOp = {
     "+" => BinOp::Add,
@@ -120,19 +152,16 @@ UNOP: UnaryOp = {
     "+" => UnaryOp::Positive,
 }
 
-TYPE: Type = {
-    "int" => Type::Int,
-    "float" => Type::Float,
-    "string" => Type::String,
-}
-
-PARAMLIST: Vec<(Type, &'input str)> = Comma<PARAM>;
-PARAM: (Type, &'input str) = TYPE "ident";
+PARAMLIST: Vec<(Type<'input>, &'input str)> = Comma<PARAM>;
+PARAM: (Type<'input>, &'input str) = TYPE "ident";
 
 FUNCDEF: FunctionDefinition<'input> =
     "def" <name: "ident"> "(" <parameters: PARAMLIST> ")" "{" <body: STATELIST> "}" =>
         FunctionDefinition {<>};
 
+FUNCCALL: Expression<'input> =
+    <"ident"> "(" <Comma<"ident">> ")" =>
+        Expression::FunctionCall(<>);
 
 STATELIST: Vec<Statement<'input>> = STATEMENT*;
 
@@ -164,6 +193,8 @@ extern {
         ")" => TokenKind::CloseParenthesis,
         "{" => TokenKind::OpenBraces,
         "}" => TokenKind::CloseBraces,
+        "[" => TokenKind::OpenBracket,
+        "]" => TokenKind::CloseBracket,
         "+" => TokenKind::Plus,
         "-" => TokenKind::Minus,
         "*" => TokenKind::Multiplication,

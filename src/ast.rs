@@ -7,31 +7,32 @@ pub enum Program<'a> {
 #[derive(Debug, PartialEq, Clone)]
 pub struct FunctionDefinition<'a> {
     pub name: &'a str,
-    pub parameters: Vec<(Type, &'a str)>,
+    pub parameters: Vec<(Type<'a>, &'a str)>,
     pub body: Vec<Statement<'a>>,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Type {
+#[derive(Debug, PartialEq, Clone)]
+pub enum Type<'a> {
     Int,
     Float,
     String,
+    Array(Box<Type<'a>>, Box<Expression<'a>>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement<'a> {
-    VariableDeclaration(Type, &'a str, Option<i64>),
+    VariableDeclaration(Type<'a>, &'a str),
     If {
         condition: Expression<'a>,
         true_path: Box<Statement<'a>>,
         false_path: Option<Box<Statement<'a>>>,
     },
     StatementList(Vec<Statement<'a>>),
-    Read(&'a str),
+    Read(LValue<'a>),
     Print(Expression<'a>),
     Return,
     Break,
-    Assignment(&'a str, Expression<'a>),
+    Assignment(LValue<'a>, Expression<'a>),
     For {
         initial_assignment: Box<Statement<'a>>,
         condition: Expression<'a>,
@@ -48,8 +49,15 @@ pub enum Expression<'a> {
     FloatLiteral(f64),
     StringLiteral(&'a str),
     Null,
+    LValue(Box<LValue<'a>>),
+    FunctionCall(&'a str, Vec<&'a str>),
+    Alloc(Type<'a>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum LValue<'a> {
     NameReference(&'a str),
-    // TODO: missing array index? ident[num]
+    ArrayAccess(Box<LValue<'a>>, Box<Expression<'a>>),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
