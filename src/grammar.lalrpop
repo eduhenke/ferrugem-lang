@@ -14,6 +14,7 @@ STATEMENT: Statement<'input> = {
     <PRINTSTAT> ";",
     <READSTAT> ";",
     <RETURNSTAT> ";",
+    FORSTAT,
     IFSTAT,
     "{" <STATELIST> "}" => Statement::StatementList(<>),
     "break" ";" => Statement::Break,
@@ -36,6 +37,17 @@ IFSTAT: Statement<'input> = {
             condition: c,
             true_path: Box::new(a),
             false_path: None,
+        }
+    }
+}
+
+FORSTAT: Statement<'input> = {
+    "for" "(" <init: ATRIBSTAT> ";" <expr: EXPRESSION> ";" <after: ATRIBSTAT> ")" <body: STATEMENT> => {
+        Statement::For {
+            initial_assignment: Box::new(init),
+            condition: expr,
+            post_assignment: Box::new(after),
+            body: Box::new(body),
         }
     }
 }

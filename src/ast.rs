@@ -32,6 +32,12 @@ pub enum Statement<'a> {
     Return,
     Break,
     Assignment(&'a str, Expression<'a>),
+    For {
+        initial_assignment: Box<Statement<'a>>,
+        condition: Expression<'a>,
+        post_assignment: Box<Statement<'a>>,
+        body: Box<Statement<'a>>,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]

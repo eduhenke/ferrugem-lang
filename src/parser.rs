@@ -75,4 +75,38 @@ mod tests {
             Statement(Assignment("a", IntLiteral(3)))
         );
     }
+    #[test]
+    fn parse_for() {
+        let program = r"
+        for (i = 0; i < 10; i = i + 1) {
+            int a;
+            a = i * i;
+        }";
+        assert_eq!(
+            parse_str(program),
+            Statement(For {
+                initial_assignment: Box::new(Assignment("i", IntLiteral(0))),
+                condition: Binary(
+                    Box::new(NameReference("i")),
+                    LessThan,
+                    Box::new(IntLiteral(10))
+                ),
+                post_assignment: Box::new(Assignment(
+                    "i",
+                    Binary(Box::new(NameReference("i")), Add, Box::new(IntLiteral(1)))
+                )),
+                body: Box::new(StatementList(vec![
+                    VariableDeclaration(Int, "a", None),
+                    Assignment(
+                        "a",
+                        Binary(
+                            Box::new(NameReference("i")),
+                            Mul,
+                            Box::new(NameReference("i"))
+                        )
+                    )
+                ]))
+            }),
+        );
+    }
 }
