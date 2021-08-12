@@ -1,49 +1,128 @@
 use crate::lexer::*;
-use crate::parser::*;
+use crate::ast::*;
 
-grammar<'input>(input: &'input str);
+grammar<'input>;
 
-pub Expr: Box<Expr<'input>> = {
-    <lhs: Expr> <op: ExprOp> <rhs: Factor> => Box::new(Expr::Op{<>}),
-    Factor,
-    IfExpression,
+pub PROGRAM: Program<'input> = {
+    STATEMENT => Program::Statement(<>),
+    FUNCDEF+ => Program::FuncList(<>),
+}
+
+STATEMENT: Statement<'input> = {
+    <VARDECL> ";",
+    IFSTAT,
+    "{" <STATELIST> "}" => Statement::StatementList(<>),
+}
+
+VARDECL: Statement<'input> = {
+    TYPE "ident" ("int_constant"?) => Statement::VariableDeclaration(<>),
+}
+
+// TODO: else
+IFSTAT: Statement<'input> = {
+    "if" "(" <c: EXPRESSION> ")" <a: STATEMENT> => {
+        Statement::IfStatement {
+            condition: c,
+            true_path: Box::new(a),
+            false_path: None,
+        }
+    }
+}
+
+EXPRESSION: Expression<'input> = {
+    NUMEXPRESSION,
+    <a: NUMEXPRESSION> <op: CMPOP> <b: NUMEXPRESSION> => {
+        Expression::Binary(Box::new(a), op, Box::new(b))
+    },
+}
+
+CMPOP: BinOp = {
+    "<" => BinOp::LessThan,
+    ">" => BinOp::GreaterThan,
+    "<=" => BinOp::LessThanEqual,
+    ">=" => BinOp::GreaterThanEqual,
+    "==" => BinOp::Equals,
+    "!=" => BinOp::NotEquals,
+}
+
+NUMEXPRESSION: Expression<'input> = {
+    TERM,
+    <a: TERM> <op: NATOP> <b: TERM> => {
+        Expression::Binary(Box::new(a), op, Box::new(b))
+    },
 };
 
-ExprOp: Opcode = {
-    Add => Opcode::Add,
-    Sub => Opcode::Sub,
-};
+TERM: Expression<'input> = {
+    UNARYEXPR,
+    <a: UNARYEXPR> <op: FLOATOP> <b: UNARYEXPR> => {
+        Expression::Binary(Box::new(a), op, Box::new(b))
+    },
+}
 
-Factor: Box<Expr<'input>> = {
-    <lhs: Factor> <op: FactorOp> <rhs: Term> => Box::new(Expr::Op{<>}),
-    Term,
-};
+UNARYEXPR: Expression<'input> = {
+    FACTOR,
+    <op: UNOP> <f: FACTOR> => {
+        Expression::Unary(op, Box::new(f))
+    },
+}
 
-FactorOp: Opcode = {
-    MulTIP => Opcode::Mul,
-    DivISI => Opcode::Div,
-};
+FACTOR: Expression<'input> = {
+    "int_constant" => Expression::IntLiteral(<>),
+    "float_constant" => Expression::FloatLiteral(<>),
+    "string_constant" => Expression::StringLiteral(<>),
+    "null" => Expression::Null,
+    LVALUE,
+    "(" <NUMEXPRESSION> ")",
+}
 
-Term: Box<Expr<'input>> = {
-    Num => Box::new(Expr::Number(<>)), // (4)
-    OpPar <Expr> ClPar
-};
+// TODO: TOTALLY WRONG
+LVALUE: Expression<'input> = {
+    "ident" => Expression::IntLiteral(42),
+}
 
-// if true { 3 + 4 }
-//        IF
-//      /   \
-//  true     +
-//          / \
-//         3  4
-IfExpression: Box<Expr<'input>> = {
-    IfKw <cond: Expr> OpBr <th: Expr> ClBr => {
-        let a = 3;
-        let b = a * 4;
-        let if_expr = Expr::If { condition: cond, then_expr: th };
-        Box::new(if_expr)
+NATOP: BinOp = {
+    "+" => BinOp::Add,
+    "-" => BinOp::Sub,
+}
+
+FLOATOP: BinOp = {
+    "*" => BinOp::Mul,
+    "/" => BinOp::Div,
+    "%" => BinOp::Mod,
+}
+
+UNOP: UnaryOp = {
+    "-" => UnaryOp::Negative,
+    "+" => UnaryOp::Positive,
+}
+
+TYPE: Type = {
+    "int" => Type::Int,
+    "float" => Type::Float,
+    "string" => Type::String,
+}
+
+PARAMLIST: Vec<(Type, &'input str)> = Comma<PARAM>;
+PARAM: (Type, &'input str) = TYPE "ident";
+
+FUNCDEF: FunctionDefinition<'input> =
+    "def" <name: "ident"> "(" <parameters: PARAMLIST> ")" "{" <body: STATELIST> "}" =>
+        FunctionDefinition {<>};
+
+
+STATELIST: Vec<Statement<'input>> = STATEMENT*;
+
+// LALRPOP Macro
+// http://lalrpop.github.io/lalrpop/tutorial/006_macros.html
+Comma<T>: Vec<T> = {
+    <mut v:(<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
     }
 };
-
 
 extern {
     type Location = usize;
@@ -51,18 +130,34 @@ extern {
     
     // all lexemes(terminals)
     enum TokenKind<'input> {
-        FnKw => TokenKind::FunctionKeyword,
-        Id => TokenKind::Identifier(<&'input str>),
-        Num => TokenKind::IntegerConstant(<i64>),
-        OpPar => TokenKind::OpenParenthesis,
-        ClPar => TokenKind::CloseParenthesis,
-        OpBr => TokenKind::OpenBraces,
-        ClBr => TokenKind::CloseBraces,
-        Add => TokenKind::Addition,
-        Sub => TokenKind::Subtraction,
-        MulTIP => TokenKind::Multiplication,
-        DivISI => TokenKind::Division,
-        IfKw => TokenKind::If,
-        ElseKw => TokenKind::Else,
+        "def" => TokenKind::FunctionKeyword,
+        "ident" => TokenKind::Identifier(<&'input str>),
+        "int_constant" => TokenKind::IntegerConstant(<i64>),
+        "float_constant" => TokenKind::FloatConstant(<f64>),
+        "string_constant" => TokenKind::StringConstant(<&'input str>),
+        "null" => TokenKind::Null,
+        "(" => TokenKind::OpenParenthesis,
+        ")" => TokenKind::CloseParenthesis,
+        "{" => TokenKind::OpenBraces,
+        "}" => TokenKind::CloseBraces,
+        "+" => TokenKind::Addition,
+        "-" => TokenKind::Subtraction,
+        "*" => TokenKind::Multiplication,
+        "/" => TokenKind::Division,
+        "%" => TokenKind::Mod,
+        "if" => TokenKind::If,
+        "else" => TokenKind::Else,
+        "," => TokenKind::Comma,
+        ";" => TokenKind::SemiColon,
+        "int" => TokenKind::IntType,
+        "float" => TokenKind::FloatType,
+        "string" => TokenKind::StringType,
+
+        "<" => TokenKind::LessThan,
+        ">" => TokenKind::GreaterThan,
+        "<=" => TokenKind::LessThanEqual,
+        ">=" => TokenKind::GreaterThanEqual,
+        "==" => TokenKind::Equals,
+        "!=" => TokenKind::NotEquals,
     }
 }

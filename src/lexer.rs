@@ -29,7 +29,7 @@ pub enum TokenKind<'a> {
     #[token("float")]
     FloatType,
     #[token("string")]
-    String,
+    StringType,
     #[token("print")]
     Print,
     #[token("read")]
@@ -69,15 +69,15 @@ pub enum TokenKind<'a> {
     #[token("<=")]
     LessThanEqual,
     #[token(">=")]
-    BiggerThanEqual,
+    GreaterThanEqual,
     #[token("==")]
     Equals,
     #[token("!=")]
-    DiffentThan,
+    NotEquals,
     #[token("<")]
     LessThan,
     #[token(">")]
-    BiggerThan,
+    GreaterThan,
     #[token("=")]
     Atribuition,
     #[token("+")]

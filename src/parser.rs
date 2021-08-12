@@ -1,65 +1,58 @@
-#[derive(Debug, PartialEq, Eq)]
-pub enum Expr<'input> {
-    Str(&'input str),
-    Number(i64),
-    Op {
-        lhs: Box<Expr<'input>>, // left-hand side
-        op: Opcode,
-        rhs: Box<Expr<'input>>, // right-hand side
-    },
-    If {
-        condition: Box<Expr<'input>>,
-        then_expr: Box<Expr<'input>>,
-    },
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum Opcode {
-    Mul,
-    Div,
-    Add,
-    Sub,
-}
-
 lalrpop_mod!(pub grammar); // synthesized by LALRPOP
+
+
+(3 + (-4)) >= 0
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast::{BinOp::*, Expression::*, Program::*, Statement::*, Type::*, UnaryOp::*, *};
     use crate::lexer::{Lexer, Token};
-    use Expr::*;
 
-    fn parse_str(input: &str) -> Expr {
+    fn parse_str(input: &str) -> Program {
         let lexer = Lexer::new(input, 1);
-        *grammar::ExprParser::new()
-            .parse(input, lexer.map(Token::to_spanned))
+        grammar::PROGRAMParser::new()
+            .parse(lexer.map(Token::to_spanned))
             .expect("parsing failed")
     }
 
     #[test]
-    fn parse_if_expr() {
+    fn parse_statement() {
         assert_eq!(
-            parse_str("if 1 { 123 }"),
-            If {
-                condition: Box::new(Number(1)),
-                then_expr: Box::new(Number(123)),
-            }
+            parse_str("int a;"),
+            Statement(VariableDeclaration(Int, "a", None))
         );
     }
 
     #[test]
-    fn parse_num_expr() {
+    fn parse_funclist() {
         assert_eq!(
-            parse_str("1 + 2 * 4"),
-            Op {
-                lhs: Box::new(Number(1)),
-                op: Opcode::Add,
-                rhs: Box::new(Op {
-                    lhs: Box::new(Number(2)),
-                    op: Opcode::Mul,
-                    rhs: Box::new(Number(4)),
-                }),
-            }
+            parse_str("def foo() { int a; }"),
+            FuncList(vec![FunctionDefinition {
+                name: "foo",
+                parameters: vec![],
+                body: vec![VariableDeclaration(Int, "a", None)]
+            }])
+        );
+    }
+
+    #[test]
+    fn parse_ifstat() {
+        assert_eq!(
+            parse_str("if ((3 + (-4)) >= 0) int a;"),
+            Statement(IfStatement {
+                condition: (Binary(
+                    Box::new(Binary(
+                        Box::new(IntLiteral(3)),
+                        Add,
+                        Box::new(Unary(Negative, Box::new(IntLiteral(4))))
+                    )),
+                    GreaterThanEqual,
+                    Box::new(IntLiteral(0))
+                )),
+                true_path: Box::new(VariableDeclaration(Int, "a", None)),
+                false_path: None,
+            })
         );
     }
 }
