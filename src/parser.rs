@@ -1,8 +1,5 @@
 lalrpop_mod!(pub grammar); // synthesized by LALRPOP
 
-
-(3 + (-4)) >= 0
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -39,14 +36,10 @@ mod tests {
     #[test]
     fn parse_ifstat() {
         assert_eq!(
-            parse_str("if ((3 + (-4)) >= 0) int a;"),
-            Statement(IfStatement {
+            parse_str("if (3 >= 0) int a;"),
+            Statement(If {
                 condition: (Binary(
-                    Box::new(Binary(
-                        Box::new(IntLiteral(3)),
-                        Add,
-                        Box::new(Unary(Negative, Box::new(IntLiteral(4))))
-                    )),
+                    Box::new(IntLiteral(3)),
                     GreaterThanEqual,
                     Box::new(IntLiteral(0))
                 )),
@@ -54,5 +47,17 @@ mod tests {
                 false_path: None,
             })
         );
+    }
+
+    #[test]
+    fn parse_read() {
+        assert_eq!(
+            parse_str("read nome;"),
+            Statement(Read(NameReference("nome")))
+        );
+    }
+    #[test]
+    fn parse_return() {
+        assert_eq!(parse_str("return;"), Statement(Return));
     }
 }

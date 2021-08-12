@@ -21,12 +21,14 @@ pub enum Type {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement<'a> {
     VariableDeclaration(Type, &'a str, Option<i64>),
-    IfStatement {
+    If {
         condition: Expression<'a>,
         true_path: Box<Statement<'a>>,
         false_path: Option<Box<Statement<'a>>>,
     },
     StatementList(Vec<Statement<'a>>),
+    Read(Expression<'a>),
+    Return,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -37,6 +39,7 @@ pub enum Expression<'a> {
     FloatLiteral(f64),
     StringLiteral(&'a str),
     Null,
+    NameReference(&'a str),
     // TODO: missing array index? ident[num]
 }
 

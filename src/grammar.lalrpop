@@ -10,6 +10,8 @@ pub PROGRAM: Program<'input> = {
 
 STATEMENT: Statement<'input> = {
     <VARDECL> ";",
+    <READSTAT> ";",
+    <RETURNSTAT> ";",
     IFSTAT,
     "{" <STATELIST> "}" => Statement::StatementList(<>),
 }
@@ -21,13 +23,16 @@ VARDECL: Statement<'input> = {
 // TODO: else
 IFSTAT: Statement<'input> = {
     "if" "(" <c: EXPRESSION> ")" <a: STATEMENT> => {
-        Statement::IfStatement {
+        Statement::If {
             condition: c,
             true_path: Box::new(a),
             false_path: None,
         }
     }
 }
+
+READSTAT: Statement<'input> = "read" <LVALUE> => Statement::Read(<>);
+RETURNSTAT: Statement<'input> = "return" => Statement::Return;
 
 EXPRESSION: Expression<'input> = {
     NUMEXPRESSION,
@@ -77,7 +82,7 @@ FACTOR: Expression<'input> = {
 
 // TODO: TOTALLY WRONG
 LVALUE: Expression<'input> = {
-    "ident" => Expression::IntLiteral(42),
+    "ident" => Expression::NameReference(<>),
 }
 
 NATOP: BinOp = {
@@ -145,13 +150,20 @@ extern {
         "*" => TokenKind::Multiplication,
         "/" => TokenKind::Division,
         "%" => TokenKind::Mod,
-        "if" => TokenKind::If,
-        "else" => TokenKind::Else,
         "," => TokenKind::Comma,
         ";" => TokenKind::SemiColon,
         "int" => TokenKind::IntType,
         "float" => TokenKind::FloatType,
         "string" => TokenKind::StringType,
+
+        "if" => TokenKind::If,
+        "else" => TokenKind::Else,
+        "read" => TokenKind::Read,
+        "print" => TokenKind::Print,
+        "return" => TokenKind::Return,
+        "for" => TokenKind::For,
+        "break" => TokenKind::Break,
+        "new" => TokenKind::New,
 
         "<" => TokenKind::LessThan,
         ">" => TokenKind::GreaterThan,
