@@ -60,4 +60,15 @@ mod tests {
     fn parse_return() {
         assert_eq!(parse_str("return;"), Statement(Return));
     }
+    #[test]
+    fn parse_print() {
+        assert_eq!(
+            parse_str("print (3 * 4);"),
+            Statement(Print(Binary(
+                Box::new(IntLiteral(3)),
+                Mul,
+                Box::new(IntLiteral(4))
+            )))
+        );
+    }
 }

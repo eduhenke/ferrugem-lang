@@ -28,7 +28,9 @@ pub enum Statement<'a> {
     },
     StatementList(Vec<Statement<'a>>),
     Read(Expression<'a>),
+    Print(Expression<'a>),
     Return,
+    Break,
 }
 
 #[derive(Debug, PartialEq, Clone)]

@@ -10,10 +10,12 @@ pub PROGRAM: Program<'input> = {
 
 STATEMENT: Statement<'input> = {
     <VARDECL> ";",
+    <PRINTSTAT> ";",
     <READSTAT> ";",
     <RETURNSTAT> ";",
     IFSTAT,
     "{" <STATELIST> "}" => Statement::StatementList(<>),
+    "break" ";" => Statement::Break,
 }
 
 VARDECL: Statement<'input> = {
@@ -32,6 +34,7 @@ IFSTAT: Statement<'input> = {
 }
 
 READSTAT: Statement<'input> = "read" <LVALUE> => Statement::Read(<>);
+PRINTSTAT: Statement<'input> = "print" <EXPRESSION> => Statement::Print(<>);
 RETURNSTAT: Statement<'input> = "return" => Statement::Return;
 
 EXPRESSION: Expression<'input> = {
