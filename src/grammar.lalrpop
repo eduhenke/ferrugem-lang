@@ -42,13 +42,13 @@ ATRIBSTAT: Statement<'input> = {
     <LVALUE> "=" <ALLOCEXPRESSION> => Statement::Assignment(<>),
 }
 
-// TODO: else
 IFSTAT: Statement<'input> = {
-    "if" "(" <c: EXPRESSION> ")" <a: STATEMENT> => {
+    "if" "(" <EXPRESSION> ")" "{" <STATELIST> "}" <( "else" STATEMENT )?> => {
+        let (condition, true_path, false_path) = (<>);
         Statement::If {
-            condition: c,
-            true_path: Box::new(a),
-            false_path: None,
+            condition,
+            true_path: Box::new(Statement::StatementList(true_path)),
+            false_path: false_path.map(|(_, stat)| stat).map(Box::new),
         }
     }
 }

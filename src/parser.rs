@@ -48,15 +48,29 @@ mod tests {
     #[test]
     fn parse_ifstat() {
         assert_eq!(
-            parse_str("if (-3 >= 0) int a;"),
+            parse_str("if (-3 >= 0) { int a; }"),
             Statement(If {
                 condition: (Binary(
                     Box::new(Unary(Negative, Box::new(IntLiteral(3)))),
                     GreaterThanEqual,
                     Box::new(IntLiteral(0))
                 )),
-                true_path: Box::new(VariableDeclaration(Int, "a")),
+                true_path: Box::new(StatementList(vec![VariableDeclaration(Int, "a")])),
                 false_path: None,
+            })
+        );
+        assert_eq!(
+            parse_str("if (1) { a = 1; } else { a = 2; }"),
+            Statement(If {
+                condition: IntLiteral(1),
+                true_path: Box::new(StatementList(vec![Assignment(
+                    NameReference("a"),
+                    IntLiteral(1)
+                )])),
+                false_path: Some(Box::new(StatementList(vec![Assignment(
+                    NameReference("a"),
+                    IntLiteral(2)
+                )]))),
             })
         );
     }
