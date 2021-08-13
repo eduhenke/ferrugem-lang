@@ -1,2 +1,3 @@
-def foo(int a) {};
-print("if for break, \ 8 ");
+def foo(int a) {
+  print("if for break, \ 8 ");
+}

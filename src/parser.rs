@@ -1,4 +1,57 @@
+use codespan_reporting::diagnostic::{Diagnostic, Label};
+
+use crate::{
+    ast::Program,
+    lexer::{LexicalError, Location, Token, TokenKind},
+};
+
 lalrpop_mod!(pub grammar); // synthesized by LALRPOP
+
+#[derive(Debug, Clone)]
+pub struct SyntaxError<'source>(
+    lalrpop_util::ParseError<Location<'source>, TokenKind<'source>, LexicalError<'source>>,
+);
+
+fn error_diagnostic_from_location(loc: &Location) -> Diagnostic<usize> {
+    Diagnostic::error()
+        .with_message("syntax error")
+        .with_labels(vec![Label::primary(loc.file_id, loc.span.clone())])
+}
+impl<'source> SyntaxError<'source> {
+    pub fn to_diagnostic(&self) -> Diagnostic<usize> {
+        use lalrpop_util::ParseError::*;
+        match &self.0 {
+            ExtraToken {
+                token: (loc, token, _),
+            } => error_diagnostic_from_location(loc)
+                .with_message(format!("extra token: {:?}", token)),
+            InvalidToken { location } => error_diagnostic_from_location(location)
+                .with_message(format!("invalid token: {:?}", location.text,)),
+            UnrecognizedEOF { location, expected } => error_diagnostic_from_location(location)
+                .with_message(format!(
+                    "file ended too early, expected: {:?}",
+                    expected.join(",").replace('"', "")
+                )),
+            UnrecognizedToken {
+                token: (loc, _, _),
+                expected,
+            } => error_diagnostic_from_location(loc).with_message(format!(
+                "found token: {:?}, expected: {:?}",
+                loc.text,
+                expected.join(",").replace('"', "")
+            )),
+            User { error } => error.to_diagnostic(),
+        }
+    }
+}
+
+pub fn parse<'a, TokenIter: Iterator<Item = Token<'a>>>(
+    tokens: TokenIter,
+) -> Result<Program<'a>, SyntaxError<'a>> {
+    grammar::PROGRAMParser::new()
+        .parse(tokens.map(Token::to_spanned))
+        .map_err(SyntaxError)
+}
 
 #[cfg(test)]
 mod tests {
@@ -6,13 +59,10 @@ mod tests {
     use crate::ast::{
         BinOp::*, Expression::*, LValue::*, Program::*, Statement::*, Type::*, UnaryOp::*, *,
     };
-    use crate::lexer::{Lexer, Token};
+    use crate::lexer::Lexer;
 
     fn parse_str(input: &str) -> Program {
-        let lexer = Lexer::new(input, 1);
-        grammar::PROGRAMParser::new()
-            .parse(lexer.map(Token::to_spanned))
-            .expect("parsing failed")
+        parse(Lexer::new(input, 1)).expect("parsing failed")
     }
 
     #[test]

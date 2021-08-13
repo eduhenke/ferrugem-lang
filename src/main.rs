@@ -6,6 +6,7 @@ use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use lexer::Lexer;
+use parser::parse;
 use std::fs;
 use structopt::StructOpt;
 #[macro_use]
@@ -35,21 +36,12 @@ fn main() {
     let mut files = SimpleFiles::new();
     let file_id = files.add(file_name, &source);
 
-    let result = Lexer::new(source.as_str(), file_id);
-
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let config = codespan_reporting::term::Config::default();
 
-    // result.into_iter().map(|item| {
-    //     let c = item.span.start;
-    // });
-    for token in result {
-        println!("{:?}", token);
-        token
-            .to_error()
-            .map(|err| err.to_diagnostic())
-            .map(|diagnostic| {
-                term::emit(&mut writer.lock(), &config, &files, &diagnostic).unwrap()
-            });
-    }
+    let tokens = Lexer::new(source.as_str(), file_id);
+    match parse(tokens) {
+        Ok(ast) => println!("Successfully parsed!\n{:?}", ast),
+        Err(err) => term::emit(&mut writer.lock(), &config, &files, &err.to_diagnostic()).unwrap(),
+    };
 }

@@ -43,20 +43,31 @@ pub enum Statement<'a> {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression<'a> {
+    // e.g. 3 + 4
     Binary(Box<Expression<'a>>, BinOp, Box<Expression<'a>>),
+    // e.g. -4
     Unary(UnaryOp, Box<Expression<'a>>),
+    // e.g. 4
     IntLiteral(i64),
+    // e.g. 5.3
     FloatLiteral(f64),
+    // e.g. "asd"
     StringLiteral(&'a str),
+    // e.g. null
     Null,
+    // e.g. a[0]
     LValue(Box<LValue<'a>>),
+    // e.g. foo()
     FunctionCall(&'a str, Vec<&'a str>),
+    // e.g. new int[10]
     Alloc(Type<'a>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum LValue<'a> {
+    // int a; a
     NameReference(&'a str),
+    // int a[10]; a[2]
     ArrayAccess(Box<LValue<'a>>, Box<Expression<'a>>),
 }
 
