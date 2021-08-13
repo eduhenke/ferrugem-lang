@@ -16,4 +16,4 @@ run_matriz:
 	@cargo run -q examples/matriz.lcc
 
 test:
-	@cargo test
+	@cargo test -- --show-output

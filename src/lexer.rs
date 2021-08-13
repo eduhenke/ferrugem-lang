@@ -1,7 +1,7 @@
 use std::usize;
 
 use codespan_reporting::diagnostic::{Diagnostic, Label};
-use logos::{Logos, Span, SpannedIter};
+use logos::{Logos, SpannedIter};
 
 #[derive(Debug, Clone)]
 pub enum LexicalError<'source> {
@@ -13,9 +13,8 @@ impl<'source> LexicalError<'source> {
         match self.clone() {
             LexicalError::InvalidSymbol(token) => Diagnostic::error()
                 .with_message("lexical error")
-                .with_labels(vec![
-                    Label::primary(token.file_id, token.span).with_message("invalid symbol")
-                ]),
+                .with_labels(vec![Label::primary(token.loc.file_id, token.loc.span)
+                    .with_message("invalid symbol")]),
         }
     }
 }
@@ -29,7 +28,7 @@ pub enum TokenKind<'a> {
     #[token("float")]
     FloatType,
     #[token("string")]
-    String,
+    StringType,
     #[token("print")]
     Print,
     #[token("read")]
@@ -69,21 +68,21 @@ pub enum TokenKind<'a> {
     #[token("<=")]
     LessThanEqual,
     #[token(">=")]
-    BiggerThanEqual,
+    GreaterThanEqual,
     #[token("==")]
     Equals,
     #[token("!=")]
-    DiffentThan,
+    NotEquals,
     #[token("<")]
     LessThan,
     #[token(">")]
-    BiggerThan,
+    GreaterThan,
     #[token("=")]
-    Atribuition,
+    Assignment,
     #[token("+")]
-    Addition,
+    Plus,
     #[token("-")]
-    Subtraction,
+    Minus,
     #[token("*")]
     Multiplication,
     #[token("/")]
@@ -109,9 +108,16 @@ pub enum TokenKind<'a> {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token<'source> {
     pub kind: TokenKind<'source>,
-    span: Span,
-    file_id: usize,
+    pub loc: Location<'source>,
 }
+#[derive(Debug, PartialEq, Clone, Default)]
+pub struct Location<'source> {
+    pub span: core::ops::Range<usize>,
+    pub file_id: usize,
+    pub text: &'source str,
+}
+
+pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 
 impl<'source> Token<'source> {
     pub fn to_error(self) -> Option<LexicalError<'source>> {
@@ -120,17 +126,31 @@ impl<'source> Token<'source> {
             _ => None,
         }
     }
+
+    pub fn to_spanned(
+        self,
+    ) -> Spanned<TokenKind<'source>, Location<'source>, LexicalError<'source>> {
+        match self.kind {
+            TokenKind::Error => Err(self.to_error().unwrap()),
+            kind => Ok((self.loc.clone(), kind, self.loc)),
+        }
+    }
 }
 
 pub struct Lexer<'source> {
     file_id: usize,
     iter: SpannedIter<'source, TokenKind<'source>>,
+    source: &'source str,
 }
 
 impl<'source> Lexer<'source> {
     pub fn new(source: &'source str, file_id: usize) -> Self {
         let iter = TokenKind::lexer(source).spanned();
-        Lexer { file_id, iter }
+        Lexer {
+            file_id,
+            iter,
+            source,
+        }
     }
 }
 impl<'source> Iterator for Lexer<'source> {
@@ -138,9 +158,12 @@ impl<'source> Iterator for Lexer<'source> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(token, span)| Token {
-            file_id: self.file_id,
             kind: token,
-            span,
+            loc: Location {
+                file_id: self.file_id,
+                text: &self.source[span.clone()],
+                span,
+            },
         })
     }
 }
@@ -183,7 +206,12 @@ mod tests {
     #[test]
     fn lex_float() {
         let result: Vec<_> = TokenKind::lexer("123.22").collect();
-
         assert_eq!(result, &[FloatConstant(123.22)]);
+    }
+
+    #[test]
+    fn lex_semi_keyword() {
+        let result: Vec<_> = TokenKind::lexer("defined").collect();
+        assert_eq!(result, &[Identifier("defined")]);
     }
 }

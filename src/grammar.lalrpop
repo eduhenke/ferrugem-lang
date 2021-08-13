@@ -1,0 +1,227 @@
+use crate::lexer;
+use crate::lexer::*;
+use crate::ast::*;
+
+grammar<'input>;
+
+pub PROGRAM: Program<'input> = {
+    STATEMENT => Program::Statement(<>),
+    FUNCDEF+ => Program::FuncList(<>),
+}
+
+STATEMENT: Statement<'input> = {
+    <VARDECL> ";",
+    <ATRIBSTAT> ";",
+    <PRINTSTAT> ";",
+    <READSTAT> ";",
+    <RETURNSTAT> ";",
+    FORSTAT,
+    IFSTAT,
+    "{" <STATELIST> "}" => Statement::StatementList(<>),
+    "break" ";" => Statement::Break,
+}
+
+TYPE: Type<'input> = {
+    "int" => Type::Int,
+    "float" => Type::Float,
+    "string" => Type::String,
+}
+
+VARDECL: Statement<'input> =
+    TYPE "ident" ("[" "int_constant" "]")* => {
+        let (base_ty, ident, suffixes) = (<>);
+        let ty = suffixes
+            .iter()
+            .map(|(_, int, _)| *int)
+            .fold(base_ty, |ty, int| Type::Array(Box::new(ty), Box::new(Expression::IntLiteral(int))));
+        Statement::VariableDeclaration(ty, ident)
+    };
+
+ATRIBSTAT: Statement<'input> = {
+    <LVALUE> "=" <EXPRESSION> => Statement::Assignment(<>),
+    <LVALUE> "=" <FUNCCALL> => Statement::Assignment(<>),
+    <LVALUE> "=" <ALLOCEXPRESSION> => Statement::Assignment(<>),
+}
+
+IFSTAT: Statement<'input> = {
+    "if" "(" <EXPRESSION> ")" "{" <STATELIST> "}" <( "else" STATEMENT )?> => {
+        let (condition, true_path, false_path) = (<>);
+        Statement::If {
+            condition,
+            true_path: Box::new(Statement::StatementList(true_path)),
+            false_path: false_path.map(|(_, stat)| stat).map(Box::new),
+        }
+    }
+}
+
+FORSTAT: Statement<'input> = {
+    "for" "(" <init: ATRIBSTAT> ";" <expr: EXPRESSION> ";" <after: ATRIBSTAT> ")" <body: STATEMENT> => {
+        Statement::For {
+            initial_assignment: Box::new(init),
+            condition: expr,
+            post_assignment: Box::new(after),
+            body: Box::new(body),
+        }
+    }
+}
+
+READSTAT: Statement<'input> = "read" <LVALUE> => Statement::Read(<>);
+PRINTSTAT: Statement<'input> = "print" <EXPRESSION> => Statement::Print(<>);
+RETURNSTAT: Statement<'input> = "return" => Statement::Return;
+
+EXPRESSION: Expression<'input> = {
+    NUMEXPRESSION,
+    <a: NUMEXPRESSION> <op: CMPOP> <b: NUMEXPRESSION> => {
+        Expression::Binary(Box::new(a), op, Box::new(b))
+    },
+}
+
+CMPOP: BinOp = {
+    "<" => BinOp::LessThan,
+    ">" => BinOp::GreaterThan,
+    "<=" => BinOp::LessThanEqual,
+    ">=" => BinOp::GreaterThanEqual,
+    "==" => BinOp::Equals,
+    "!=" => BinOp::NotEquals,
+}
+
+NUMEXPRESSION: Expression<'input> = {
+    TERM,
+    <a: TERM> <op: NATOP> <b: TERM> => {
+        Expression::Binary(Box::new(a), op, Box::new(b))
+    },
+};
+
+TERM: Expression<'input> = {
+    UNARYEXPR,
+    <a: UNARYEXPR> <op: FLOATOP> <b: UNARYEXPR> => {
+        Expression::Binary(Box::new(a), op, Box::new(b))
+    },
+}
+
+UNARYEXPR: Expression<'input> = {
+    FACTOR,
+    <op: UNOP> <f: FACTOR> => {
+        Expression::Unary(op, Box::new(f))
+    },
+}
+
+FACTOR: Expression<'input> = {
+    "int_constant" => Expression::IntLiteral(<>),
+    "float_constant" => Expression::FloatLiteral(<>),
+    "string_constant" => Expression::StringLiteral(<>),
+    "null" => Expression::Null,
+    LVALUE => Expression::LValue(Box::new(<>)),
+    "(" <NUMEXPRESSION> ")",
+}
+
+LVALUE: LValue<'input> =
+    "ident" ("[" NUMEXPRESSION "]")* => {
+        let (id, arr_accesses) = (<>);
+        let initial_lval = LValue::NameReference(id);
+        arr_accesses
+            .iter()
+            .map(|(_, arr_access, _)| arr_access)
+            .fold(initial_lval, |lval, numexpr|
+                LValue::ArrayAccess(Box::new(lval), Box::new(numexpr.to_owned()))
+            )
+    };
+
+ALLOCEXPRESSION: Expression<'input> = 
+    "new" TYPE ("[" NUMEXPRESSION "]")+ => {
+        let (_, base_ty, suffixes) = (<>);
+        let ty = suffixes
+            .iter()
+            .map(|(_, int, _)| int)
+            .fold(base_ty, |ty, int| Type::Array(Box::new(ty), Box::new(int.to_owned())));
+        Expression::Alloc(ty)
+    };
+
+NATOP: BinOp = {
+    "+" => BinOp::Add,
+    "-" => BinOp::Sub,
+}
+
+FLOATOP: BinOp = {
+    "*" => BinOp::Mul,
+    "/" => BinOp::Div,
+    "%" => BinOp::Mod,
+}
+
+UNOP: UnaryOp = {
+    "-" => UnaryOp::Negative,
+    "+" => UnaryOp::Positive,
+}
+
+PARAMLIST: Vec<(Type<'input>, &'input str)> = Comma<PARAM>;
+PARAM: (Type<'input>, &'input str) = TYPE "ident";
+
+FUNCDEF: FunctionDefinition<'input> =
+    "def" <name: "ident"> "(" <parameters: PARAMLIST> ")" "{" <body: STATELIST> "}" =>
+        FunctionDefinition {<>};
+
+FUNCCALL: Expression<'input> =
+    <"ident"> "(" <Comma<"ident">> ")" =>
+        Expression::FunctionCall(<>);
+
+STATELIST: Vec<Statement<'input>> = STATEMENT*;
+
+// LALRPOP Macro
+// http://lalrpop.github.io/lalrpop/tutorial/006_macros.html
+Comma<T>: Vec<T> = {
+    <mut v:(<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+extern {
+    type Location = lexer::Location<'input>;
+    type Error = LexicalError<'input>;
+    
+    // all lexemes(terminals)
+    enum TokenKind<'input> {
+        "def" => TokenKind::FunctionKeyword,
+        "ident" => TokenKind::Identifier(<&'input str>),
+        "int_constant" => TokenKind::IntegerConstant(<i64>),
+        "float_constant" => TokenKind::FloatConstant(<f64>),
+        "string_constant" => TokenKind::StringConstant(<&'input str>),
+        "null" => TokenKind::Null,
+        "(" => TokenKind::OpenParenthesis,
+        ")" => TokenKind::CloseParenthesis,
+        "{" => TokenKind::OpenBraces,
+        "}" => TokenKind::CloseBraces,
+        "[" => TokenKind::OpenBracket,
+        "]" => TokenKind::CloseBracket,
+        "+" => TokenKind::Plus,
+        "-" => TokenKind::Minus,
+        "*" => TokenKind::Multiplication,
+        "/" => TokenKind::Division,
+        "%" => TokenKind::Mod,
+        "," => TokenKind::Comma,
+        ";" => TokenKind::SemiColon,
+        "int" => TokenKind::IntType,
+        "float" => TokenKind::FloatType,
+        "string" => TokenKind::StringType,
+        "=" => TokenKind::Assignment,
+
+        "if" => TokenKind::If,
+        "else" => TokenKind::Else,
+        "read" => TokenKind::Read,
+        "print" => TokenKind::Print,
+        "return" => TokenKind::Return,
+        "for" => TokenKind::For,
+        "break" => TokenKind::Break,
+        "new" => TokenKind::New,
+
+        "<" => TokenKind::LessThan,
+        ">" => TokenKind::GreaterThan,
+        "<=" => TokenKind::LessThanEqual,
+        ">=" => TokenKind::GreaterThanEqual,
+        "==" => TokenKind::Equals,
+        "!=" => TokenKind::NotEquals,
+    }
+}
