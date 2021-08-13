@@ -7,6 +7,7 @@ use codespan_reporting::term;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use lexer::Lexer;
 use parser::parse;
+// use std::collections::HashMap;
 use std::fs;
 use structopt::StructOpt;
 #[macro_use]
@@ -40,8 +41,19 @@ fn main() {
     let config = codespan_reporting::term::Config::default();
 
     let tokens = Lexer::new(source.as_str(), file_id);
+
     match parse(tokens) {
         Ok(ast) => println!("Successfully parsed!\n{:?}", ast),
         Err(err) => term::emit(&mut writer.lock(), &config, &files, &err.to_diagnostic()).unwrap(),
     };
+
+    // let mut symbol_table: HashMap<String, i32> = HashMap::new();
+    // for token in result {
+    //     match token.kind {
+    //         lexer::TokenKind::Identifier(name) => {
+    //             *symbol_table.entry(name.to_string()).or_insert(0) += 1;
+    //         }
+    //         _ => {}
+    //     }
+    // }
 }

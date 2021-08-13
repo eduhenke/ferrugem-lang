@@ -1,0 +1,127 @@
+def principal()
+{
+  int op;
+  int linhas;
+  int colunas;
+  int matriz;
+  int matriz2;
+  int matrizResultado;
+  int i;
+  int j;
+
+  print "Escolha uma opcao: ";
+  print "1 - Soma de matriz";
+  print "2 - Subtracao de matriz";
+  print "3 - Matriz transposta";
+  read op;
+
+  print "Digite o numero de linhas da matriz";
+  read linhas;
+  
+  print "Digite o numero de colunas da matriz";
+  read colunas;
+
+  if (op == 1)
+  {
+    print "Soma de matrizes";
+
+    matriz = new float[linhas][colunas];
+    matriz2 = new float[linhas][colunas];
+  
+    for (i = 0; i < linhas; i = i + 1)
+    {
+      for (j = 0; j < colunas; j = j + 1)
+      {
+        print "Digite o valor do elemento da matriz1, linha: " + (i + 1) + " coluna: " + (j + 1);
+        read matriz[i][j];
+      }
+    }
+    
+    for (i = 0; i < linhas; i = i + 1)
+    {
+      for (j = 0; j < colunas; j = j + 1)
+      {
+        print "Digite o valor do elemento da matriz2, linha: " + (i + 1) + " coluna: " + (j + 1);
+        read matriz2[i][j];
+      }
+    }
+
+    for (i = 0; i < linhas; i = i + 1)
+    {
+      for (j = 0; j < colunas; j = j + 1)
+      {
+        matrizResultado[i][j] = matriz[i][j] + matriz[i][j];
+      }
+    }
+  }
+  
+  if (op == 2)
+  {
+    print "Subtracao de matrizes";
+
+    matriz = new float[linhas][colunas];
+    matriz2 = new float[linhas][colunas];
+  
+    for (i = 0; i < linhas; i = i + 1)
+    {
+      for (j = 0; j < colunas; j = j + 1)
+      {
+        print "Digite o valor do elemento da matriz1, linha: " + (i + 1) + " coluna: " + (j + 1);
+        read matriz[i][j];
+      }
+    }
+    
+    for (i = 0; i < linhas; i = i + 1)
+    {
+      for (j = 0; j < colunas; j = j + 1)
+      {
+        print "Digite o valor do elemento da matriz2, linha: " + (i + 1) + " coluna: " + (j + 1);
+        read matriz2[i][j];
+      }
+    }
+
+    for (i = 0; i < linhas; i = i + 1)
+    {
+      for (j = 0; j < colunas; j = j + 1)
+      {
+        matrizResultado[i][j] = matriz[i][j] - matriz[i][j];
+      }
+    }
+  }
+
+  if (op == 3)
+  {
+    print "Matriz transposta";
+    matriz = new float[linhas][colunas];
+    matrizResultado = new float[colunas][linhas];
+
+    for (i = 0; i < linhas; i = i + 1)
+    {
+      for (j = 0; j < colunas; j = j + 1)
+      {
+        print "Digite o valor do elemento da linha: " + (i + 1) + " coluna: " + (j + 1);
+        read matriz[i][j];
+      }
+    }
+
+    for (i = 0; i < linhas; i = i + 1)
+    {
+      for (j = 0; j < colunas; j = j + 1)
+      {
+        matrizResultado[j][i] = matriz[i][j];
+      }
+    }
+  }
+
+  print "Resultado: ";
+  for (i = 0; i < linhas; i = i + 1)
+  {
+    print "linha: " + i;
+    for (j = 0; j < colunas; j = j + 1)
+    {
+      print matrizResultado[i][j];
+    }
+  }
+  
+  return;
+}
