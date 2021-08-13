@@ -240,4 +240,19 @@ mod tests {
             ))
         );
     }
+    #[test]
+    fn parse_complex_expression() {
+        assert_eq!(
+            parse_str("print 1 + 2 + 3;"),
+            Statement(Print(Binary(
+                Box::new(Binary(
+                    Box::new(IntLiteral(1)),
+                    Add,
+                    Box::new(IntLiteral(2))
+                )),
+                Add,
+                Box::new(IntLiteral(3))
+            )))
+        )
+    }
 }

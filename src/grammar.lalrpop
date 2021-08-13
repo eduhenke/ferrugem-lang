@@ -87,14 +87,14 @@ CMPOP: BinOp = {
 
 NUMEXPRESSION: Expression<'input> = {
     TERM,
-    <a: TERM> <op: NATOP> <b: TERM> => {
+    <a: NUMEXPRESSION> <op: NATOP> <b: TERM> => {
         Expression::Binary(Box::new(a), op, Box::new(b))
     },
 };
 
 TERM: Expression<'input> = {
     UNARYEXPR,
-    <a: UNARYEXPR> <op: FLOATOP> <b: UNARYEXPR> => {
+    <a: TERM> <op: FLOATOP> <b: UNARYEXPR> => {
         Expression::Binary(Box::new(a), op, Box::new(b))
     },
 }
