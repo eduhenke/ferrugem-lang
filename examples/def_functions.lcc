@@ -1,0 +1,90 @@
+
+def soma(int a, int b) {
+    int resultado;
+
+    resultado = a + b;
+
+    if (resultado == 0)
+        {
+            print "resultado invalide";
+            
+            print "digite manualmente os valores";
+            read valorA;
+            read valorB;
+
+            int valorResultado;
+
+            valorResultado = valorA + valorB;
+        
+            for (i = 0; i < valorResultado; i = i + 1)
+            {
+                print "";
+
+                if (el == valorBusca)
+                {
+                    achado = 1;
+                    indiceAchado = i;
+                    break;
+                }
+            }
+
+            if (achado == 1)
+            {
+            print("Elemento encontrado na posicao: ");
+            print(indiceAchado);
+            }
+            else
+            {
+            print("Elemento nao encontrado");
+            }
+
+        }
+
+    return;
+}
+
+def funct() {
+    int resultado;
+    int teste;
+    int a;
+    int b;
+    int d;
+    int op;
+    int linhas;
+    int colunas;
+    int matriz;
+    int matriz2;
+    int matrizResultado;
+    int i;
+    int j;
+    string menu;
+
+    menu = printMenu();
+    read op;
+
+    print "Digite o numero de linhas da matriz";
+    read linhas;
+    
+    print "Digite o numero de colunas da matriz";
+    read colunas;
+
+    if (op == 1)
+    {
+        print "Soma de matrizes";
+
+        matriz = new int[linhas][colunas];
+        matriz2 = new int[linhas][colunas];
+    
+        for (i = 0; i < linhas; i = i + 1)
+        {
+            for (j = 0; j < colunas; j = j + 1)
+            {
+                print "Digite o valor do proximo elemento da matriz1:";
+                read matriz[i][j];
+            }
+        }
+    }
+    teste = a + b + 31 + d;
+
+    resultado = soma(a, b);
+}
