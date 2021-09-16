@@ -1,15 +1,20 @@
 mod ast;
 mod lexer;
 mod parser;
+mod semantic;
 
 use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use lexer::Lexer;
 use parser::parse;
+use semantic::TypeCheckable;
 // use std::collections::HashMap;
 use std::fs;
+use std::rc::Rc;
 use structopt::StructOpt;
+
+use crate::semantic::Scope;
 #[macro_use]
 extern crate lalrpop_util;
 /// Search for a pattern in a file and display the lines that contain it.
@@ -43,7 +48,11 @@ fn main() {
     let tokens = Lexer::new(source.as_str(), file_id);
 
     match parse(tokens) {
-        Ok(ast) => println!("Successfully parsed!\n{:?}", ast),
+        Ok(ast) => {
+            println!("Successfully parsed!\n{:?}", ast);
+            let result = ast.type_check(Scope::new_global());
+            println!("Succesfully type-checked! {:?}", result);
+        }
         Err(err) => term::emit(&mut writer.lock(), &config, &files, &err.to_diagnostic()).unwrap(),
     };
 

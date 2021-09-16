@@ -15,8 +15,31 @@ pub struct FunctionDefinition<'a> {
 pub enum Type<'a> {
     Int,
     Float,
+    Null,
+    Void,
     String,
     Array(Box<Type<'a>>, Box<Expression<'a>>),
+    Function {
+        return_type: Box<Type<'a>>,
+        params_types: Vec<Type<'a>>,
+    },
+}
+
+impl Type<'_> {
+    pub fn can_be_casted_to(&self, other: &Type) -> bool {
+        if self.is_numeric() && other.is_numeric() {
+            true
+        } else {
+            self == other
+        }
+    }
+    pub fn is_numeric(&self) -> bool {
+        match self {
+            Type::Int => true,
+            Type::Float => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

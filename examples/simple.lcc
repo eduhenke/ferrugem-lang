@@ -1,3 +1,6 @@
-def foo(int a) {
-  print("if for break, \ 8 ");
+def main() {
+  int a;
+  int b;
+  a = a + 3;
+  return;
 }
