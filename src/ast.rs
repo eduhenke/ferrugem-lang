@@ -1,3 +1,5 @@
+use std::{borrow::Borrow, fmt::Display, ops::Deref};
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Program<'a> {
     Statement(Statement<'a>),
@@ -30,6 +32,11 @@ impl Type<'_> {
         if self.is_numeric() && other.is_numeric() {
             true
         } else {
+            if let Type::Array(a_base, _a_size) = self {
+                if let Type::Array(b_base, _b_size) = other {
+                    return a_base.can_be_casted_to(b_base);
+                }
+            }
             self == other
         }
     }
@@ -38,6 +45,36 @@ impl Type<'_> {
             Type::Int => true,
             Type::Float => true,
             _ => false,
+        }
+    }
+}
+
+impl Display for Type<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::Int => write!(f, "int"),
+            Type::Float => write!(f, "float"),
+            Type::Null => write!(f, "null"),
+            Type::Void => write!(f, "void"),
+            Type::String => write!(f, "string"),
+            Type::Array(ty, size) => write!(
+                f,
+                "{}[{}]",
+                ty,
+                match size.deref() {
+                    Expression::IntLiteral(num) => num.to_string(),
+                    Expression::StringLiteral(var) => var.to_string(),
+                    Expression::LValue(lval) => match lval.borrow() {
+                        LValue::NameReference(name) => name.to_string(),
+                        LValue::ArrayAccess(_, _) => todo!(),
+                    },
+                    x => panic!("{:?}", x),
+                }
+            ),
+            Type::Function {
+                return_type: _,
+                params_types: _,
+            } => todo!(),
         }
     }
 }
@@ -94,7 +131,7 @@ pub enum LValue<'a> {
     ArrayAccess(Box<LValue<'a>>, Box<Expression<'a>>),
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum BinOp {
     // comparison
     LessThan,
@@ -111,9 +148,34 @@ pub enum BinOp {
     Div,
     Mod,
 }
+impl Display for BinOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BinOp::LessThan => write!(f, "<"),
+            BinOp::GreaterThan => write!(f, ">"),
+            BinOp::LessThanEqual => write!(f, "<="),
+            BinOp::GreaterThanEqual => write!(f, ">="),
+            BinOp::Equals => write!(f, "=="),
+            BinOp::NotEquals => write!(f, "!="),
+            BinOp::Add => write!(f, "+"),
+            BinOp::Sub => write!(f, "-"),
+            BinOp::Mul => write!(f, "*"),
+            BinOp::Div => write!(f, "/"),
+            BinOp::Mod => write!(f, "%"),
+        }
+    }
+}
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum UnaryOp {
     Negative,
     Positive,
+}
+impl Display for UnaryOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UnaryOp::Negative => write!(f, "-"),
+            UnaryOp::Positive => write!(f, "+"),
+        }
+    }
 }

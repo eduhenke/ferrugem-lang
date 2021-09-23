@@ -1,6 +1,8 @@
 {
   int a;
   a = 3;
-  float b;
-  b = 3 + "asd";
+  {
+    float b;
+    b = 3 + a;
+  }
 }

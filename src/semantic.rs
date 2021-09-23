@@ -1,35 +1,21 @@
-use std::{
-    borrow::{Borrow, BorrowMut},
-    cell::{Ref, RefCell},
-    collections::HashMap,
-    ops::{Deref, Not},
-    rc::Rc,
-};
+use std::{cell::RefCell, collections::HashMap, fmt::Debug, ops::Deref, rc::Rc};
 
-use crate::ast::{
-    BinOp, Expression, FunctionDefinition, LValue, Program, Statement, Type, UnaryOp,
-};
-
-// // Um código de representação intermediaŕio de 3 endereços
-// enum IR {
-//     BinOp(String, BinOp, String),
-//     UnaryOp(UnaryOp, String),
-//     Assignment(String, Box<IR>),
-// }
+use crate::ast::{Expression, FunctionDefinition, LValue, Program, Statement, Type};
 
 #[derive(Debug, Clone)]
-pub enum SemanticError {
+pub enum SemanticError<'a> {
     AlreadyDeclared,
     MustBePreviouslyDeclared,
     MustBeAFunction,
     TypeOfParametersIncorrect,
     BreakMustBeInsideOfFor,
     ReturnMustBeInsideOfFunction,
-    TypesMustBeTheSame,
+    TypesMustBeTheSame(Type<'a>, Type<'a>),
+    AllocationOnlyForArray,
     OperationOnlyForNumeric,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Link<T>(Rc<RefCell<T>>);
 
 impl<T> Link<T> {
@@ -45,6 +31,12 @@ impl<T> Deref for Link<T> {
     }
 }
 
+impl<T: std::fmt::Debug> Debug for Link<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.deref().borrow())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScopeKind {
     Function,
@@ -53,21 +45,24 @@ pub enum ScopeKind {
     Global,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Scope<'a> {
     pub symbol_table: HashMap<&'a str, Type<'a>>,
     pub child_scopes: Vec<Link<Scope<'a>>>,
     pub parent_scope: Option<Link<Scope<'a>>>,
     pub kind: ScopeKind,
+    level: usize,
 }
 
 impl<'a> Scope<'a> {
     fn new(parent_scope: Link<Scope<'a>>, kind: ScopeKind) -> Scope<'a> {
+        let level = parent_scope.deref().borrow().level;
         Scope {
             symbol_table: HashMap::new(),
             child_scopes: Vec::new(),
             parent_scope: Some(parent_scope),
             kind,
+            level,
         }
     }
     pub fn new_global() -> Link<Scope<'a>> {
@@ -76,6 +71,7 @@ impl<'a> Scope<'a> {
             child_scopes: Vec::new(),
             parent_scope: None,
             kind: ScopeKind::Global,
+            level: 0,
         })
     }
 
@@ -85,7 +81,7 @@ impl<'a> Scope<'a> {
         child
     }
 
-    fn add_symbol(&mut self, name: &'a str, ty: Type<'a>) -> Result<(), SemanticError> {
+    fn add_symbol(&mut self, name: &'a str, ty: Type<'a>) -> Result<(), SemanticError<'a>> {
         // let mut me = self.clone();
         let was_empty = self.symbol_table.insert(name, ty).is_none();
         if !was_empty {
@@ -94,7 +90,7 @@ impl<'a> Scope<'a> {
         Ok(())
     }
 
-    fn lookup_symbol(&self, name: &str) -> Result<Type<'a>, SemanticError> {
+    fn lookup_symbol(&self, name: &str) -> Result<Type<'a>, SemanticError<'a>> {
         if let Some(ty) = self.symbol_table.get(name) {
             Ok(ty.clone())
         } else {
@@ -117,18 +113,28 @@ impl<'a> Scope<'a> {
     }
 }
 
+impl Debug for Scope<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Scope")
+            .field("kind", &self.kind)
+            .field("symbol_table", &self.symbol_table)
+            .field("child_scopes", &format_args!("{:#?}", self.child_scopes))
+            .finish()
+    }
+}
+
 pub(crate) trait TypeCheckable {
     fn type_check<'a>(
         &'a self,
         scope: Link<Scope<'a>>,
-    ) -> Result<(Link<Scope<'a>>, Type<'a>), SemanticError>;
+    ) -> Result<(Link<Scope<'a>>, Type<'a>), SemanticError<'a>>;
 }
 
 impl<'a> TypeCheckable for Program<'a> {
     fn type_check<'b>(
         &'b self,
         scope: Link<Scope<'b>>,
-    ) -> Result<(Link<Scope<'b>>, Type<'b>), SemanticError> {
+    ) -> Result<(Link<Scope<'b>>, Type<'b>), SemanticError<'b>> {
         match self {
             Program::FuncList(funcs) => funcs
                 .into_iter()
@@ -142,7 +148,7 @@ impl<'a> TypeCheckable for FunctionDefinition<'a> {
     fn type_check<'b>(
         &'b self,
         scope: Link<Scope<'b>>,
-    ) -> Result<(Link<Scope<'b>>, Type<'b>), SemanticError> {
+    ) -> Result<(Link<Scope<'b>>, Type<'b>), SemanticError<'b>> {
         let f_scope = scope
             .deref()
             .borrow_mut()
@@ -178,7 +184,7 @@ impl<'a> TypeCheckable for FunctionDefinition<'a> {
             return_type: Box::new(
                 self.body
                     .last()
-                    .and_then(|stmt| stmt.type_check(f_scope).map(|(sc, ty)| ty).ok())
+                    .and_then(|stmt| stmt.type_check(f_scope).map(|(_sc, ty)| ty).ok())
                     .unwrap_or(Type::Void),
             ),
         };
@@ -195,24 +201,20 @@ impl<'a> TypeCheckable for Expression<'a> {
     fn type_check<'b>(
         &'b self,
         scope: Link<Scope<'b>>,
-    ) -> Result<(Link<Scope<'b>>, Type<'b>), SemanticError> {
+    ) -> Result<(Link<Scope<'b>>, Type<'b>), SemanticError<'b>> {
         match self {
-            Expression::Binary(rhs, op, lhs) => {
+            Expression::Binary(rhs, _op, lhs) => {
                 rhs.type_check(scope).and_then(|(scope, rhs_ty)| {
                     lhs.type_check(scope.clone()).and_then(|(_, lhs_ty)| {
-                        println!(
-                            "type checking binary, rhs({:?}): {:?}; lhs({:?}): {:?}",
-                            rhs_ty, rhs, lhs_ty, lhs
-                        );
                         if !rhs_ty.can_be_casted_to(&lhs_ty) {
-                            Err(SemanticError::TypesMustBeTheSame)
+                            Err(SemanticError::TypesMustBeTheSame(rhs_ty, lhs_ty))
                         } else {
                             Ok((scope, rhs_ty))
                         }
                     })
                 })
             }
-            Expression::Unary(op, expr) => expr.type_check(scope).and_then(|(scope, ty)| {
+            Expression::Unary(_op, expr) => expr.type_check(scope).and_then(|(scope, ty)| {
                 if !ty.is_numeric() {
                     Err(SemanticError::OperationOnlyForNumeric)
                 } else {
@@ -248,7 +250,16 @@ impl<'a> TypeCheckable for Expression<'a> {
                     _ => Err(SemanticError::MustBeAFunction),
                 }
             }
-            Expression::Alloc(_) => todo!(),
+            Expression::Alloc(alloc_ty) => match alloc_ty {
+                Type::Array(_ty, expr) => {
+                    expr.type_check(scope.clone())
+                        .and_then(|(scope, ty)| match ty.is_numeric() {
+                            true => Ok((scope, alloc_ty.clone())),
+                            false => Err(SemanticError::OperationOnlyForNumeric),
+                        })
+                }
+                _ => Err(SemanticError::AllocationOnlyForArray),
+            },
         }
     }
 }
@@ -257,7 +268,7 @@ impl<'a> TypeCheckable for Statement<'a> {
     fn type_check<'b>(
         &'b self,
         scope: Link<Scope<'b>>,
-    ) -> Result<(Link<Scope<'b>>, Type<'b>), SemanticError> {
+    ) -> Result<(Link<Scope<'b>>, Type<'b>), SemanticError<'b>> {
         match self {
             Statement::VariableDeclaration(ty, name) => scope
                 .clone()
@@ -283,7 +294,7 @@ impl<'a> TypeCheckable for Statement<'a> {
                 condition,
                 true_path,
                 // TODO:
-                false_path,
+                false_path: _,
             } => {
                 condition
                     .type_check(scope.clone())
@@ -307,9 +318,14 @@ impl<'a> TypeCheckable for Statement<'a> {
                 true => Ok((scope, Type::Void)),
                 false => Err(SemanticError::BreakMustBeInsideOfFor),
             },
-            // TODO:
             Statement::Assignment(lval, expr) => {
-                lval.type_check(scope.clone()).and(expr.type_check(scope))
+                let (scope, l_ty) = lval.type_check(scope.clone())?;
+                let (scope, expr_ty) = expr.type_check(scope)?;
+                if !l_ty.can_be_casted_to(&expr_ty) {
+                    Err(SemanticError::TypesMustBeTheSame(l_ty, expr_ty))
+                } else {
+                    Ok((scope, l_ty))
+                }
             }
             Statement::For {
                 initial_assignment,
@@ -335,13 +351,28 @@ impl<'a> TypeCheckable for LValue<'a> {
     fn type_check<'b>(
         &'b self,
         scope: Link<Scope<'b>>,
-    ) -> Result<(Link<Scope<'b>>, Type<'b>), SemanticError> {
-        match self {
-            &LValue::NameReference(name) => (*scope.clone())
+    ) -> Result<(Link<Scope<'b>>, Type<'b>), SemanticError<'b>> {
+        match &self {
+            LValue::NameReference(name) => (*scope.clone())
                 .borrow()
                 .lookup_symbol(name)
                 .map(|ty| (scope, ty)),
-            &LValue::ArrayAccess(_, _) => todo!(),
+            LValue::ArrayAccess(lval, expr) => {
+                lval.as_ref()
+                    .type_check(scope)
+                    .and_then(|(scope, lval_ty)| {
+                        expr.type_check(scope)
+                            .and_then(|(scope, ty)| match ty.is_numeric() {
+                                true => Ok((scope, {
+                                    match lval_ty {
+                                        Type::Array(base_ty, _) => base_ty.deref().clone(),
+                                        x => panic!("must be array type, got: {:?}", x),
+                                    }
+                                })),
+                                false => Err(SemanticError::OperationOnlyForNumeric),
+                            })
+                    })
+            }
         }
     }
 }

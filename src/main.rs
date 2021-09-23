@@ -1,8 +1,10 @@
 mod ast;
+mod codegen;
 mod lexer;
 mod parser;
 mod semantic;
 
+use codegen::CodeGeneratable;
 use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
@@ -11,9 +13,10 @@ use parser::parse;
 use semantic::TypeCheckable;
 // use std::collections::HashMap;
 use std::fs;
-use std::rc::Rc;
+
 use structopt::StructOpt;
 
+use crate::codegen::Context;
 use crate::semantic::Scope;
 #[macro_use]
 extern crate lalrpop_util;
@@ -45,24 +48,44 @@ fn main() {
     let writer = StandardStream::stderr(ColorChoice::Auto);
     let config = codespan_reporting::term::Config::default();
 
+    // lexical analysis
     let tokens = Lexer::new(source.as_str(), file_id);
 
-    match parse(tokens) {
-        Ok(ast) => {
-            println!("Successfully parsed!\n{:?}", ast);
-            let result = ast.type_check(Scope::new_global());
-            println!("Succesfully type-checked! {:?}", result);
-        }
-        Err(err) => term::emit(&mut writer.lock(), &config, &files, &err.to_diagnostic()).unwrap(),
-    };
+    // syntactic analysis
+    let ast = parse(tokens)
+        .map_err(|err| {
+            term::emit(&mut writer.lock(), &config, &files, &err.to_diagnostic()).unwrap()
+        })
+        .unwrap();
+    println!("Successfully parsed!\n{:?}\n", ast);
 
-    // let mut symbol_table: HashMap<String, i32> = HashMap::new();
-    // for token in result {
-    //     match token.kind {
-    //         lexer::TokenKind::Identifier(name) => {
-    //             *symbol_table.entry(name.to_string()).or_insert(0) += 1;
-    //         }
-    //         _ => {}
-    //     }
-    // }
+    // semantic analysis
+    let (global_scope, _) = ast
+        .type_check(Scope::new_global())
+        .map_err(|err| {
+            // term::emit(&mut writer.lock(), &config, &files, &err.to_diagnostic()).unwrap()
+            panic!("{:?}", err);
+        })
+        .unwrap();
+
+    println!("Succesfully type-checked!");
+    // these are always true, because if there is any type-checking error
+    // they will not print whatsoever, because it will panic above
+    println!("Arithmetic expressions: ok");
+    println!("Variable declarations inside scope: ok");
+    println!("Every break inside a for: ok");
+
+    println!("Scope: {:#?}", global_scope);
+
+    // IR generation(generating 3-address intermediate representation code)
+    let instructions = ast.generate_code(&mut Context::new());
+    println!(
+        "Succesfully generated code: \n{}",
+        instructions
+            .into_iter()
+            .map(|i| i.to_string())
+            .filter(|s| s.len() > 0)
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
 }

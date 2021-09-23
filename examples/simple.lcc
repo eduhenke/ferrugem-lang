@@ -1,6 +1,11 @@
-def main() {
-  int a;
-  int b;
-  a = a + 3;
-  return;
+{
+  string i;
+  for (i = 0; i < 100; i = i * i + 5) {
+    print i;
+    if (i < 5 % 2) {
+      print 30;
+    } else {
+      print 20;
+    }
+  }
 }

@@ -3,9 +3,6 @@ def principal()
   int op;
   int linhas;
   int colunas;
-  int matriz;
-  int matriz2;
-  int matrizResultado;
   int i;
   int j;
 
@@ -21,18 +18,26 @@ def principal()
   print "Digite o numero de colunas da matriz";
   read colunas;
 
+  int matriz[100][100];
+  int matriz2[100][100];
+  int matrizResultado[100][100];
+  int matrizTransposta[100][100];
+  matriz = new float[linhas][colunas];
+  matriz2 = new float[linhas][colunas];
+  matrizResultado = new float[linhas][colunas];
+  matrizTransposta = new float[colunas][linhas];
+
   if (op == 1)
   {
     print "Soma de matrizes";
-
-    matriz = new float[linhas][colunas];
-    matriz2 = new float[linhas][colunas];
-  
     for (i = 0; i < linhas; i = i + 1)
     {
       for (j = 0; j < colunas; j = j + 1)
       {
-        print "Digite o valor do elemento da matriz1, linha: " + (i + 1) + " coluna: " + (j + 1);
+        print "Digite o valor do elemento da matriz1, linha: ";
+        print i + 1;
+        print " coluna: ";
+        print j + 1;
         read matriz[i][j];
       }
     }
@@ -41,7 +46,10 @@ def principal()
     {
       for (j = 0; j < colunas; j = j + 1)
       {
-        print "Digite o valor do elemento da matriz2, linha: " + (i + 1) + " coluna: " + (j + 1);
+        print "Digite o valor do elemento da matriz2, linha: ";
+        print i + 1;
+        print " coluna: ";
+        print j + 1;
         read matriz2[i][j];
       }
     }
@@ -58,15 +66,14 @@ def principal()
   if (op == 2)
   {
     print "Subtracao de matrizes";
-
-    matriz = new float[linhas][colunas];
-    matriz2 = new float[linhas][colunas];
-  
     for (i = 0; i < linhas; i = i + 1)
     {
       for (j = 0; j < colunas; j = j + 1)
       {
-        print "Digite o valor do elemento da matriz1, linha: " + (i + 1) + " coluna: " + (j + 1);
+        print "Digite o valor do elemento da matriz1, linha: ";
+        print i + 1;
+        print " coluna: ";
+        print j + 1;
         read matriz[i][j];
       }
     }
@@ -75,7 +82,10 @@ def principal()
     {
       for (j = 0; j < colunas; j = j + 1)
       {
-        print "Digite o valor do elemento da matriz2, linha: " + (i + 1) + " coluna: " + (j + 1);
+        print "Digite o valor do elemento da matriz2, linha: ";
+        print i + 1;
+        print " coluna: ";
+        print j + 1;
         read matriz2[i][j];
       }
     }
@@ -92,14 +102,14 @@ def principal()
   if (op == 3)
   {
     print "Matriz transposta";
-    matriz = new float[linhas][colunas];
-    matrizResultado = new float[colunas][linhas];
-
     for (i = 0; i < linhas; i = i + 1)
     {
       for (j = 0; j < colunas; j = j + 1)
       {
-        print "Digite o valor do elemento da linha: " + (i + 1) + " coluna: " + (j + 1);
+        print "Digite o valor do elemento da linha: ";
+        print i + 1;
+        print " coluna: ";
+        print j + 1;
         read matriz[i][j];
       }
     }
@@ -108,18 +118,30 @@ def principal()
     {
       for (j = 0; j < colunas; j = j + 1)
       {
-        matrizResultado[j][i] = matriz[i][j];
+        matrizTransposta[j][i] = matriz[i][j];
       }
     }
-  }
 
-  print "Resultado: ";
-  for (i = 0; i < linhas; i = i + 1)
-  {
-    print "linha: " + i;
-    for (j = 0; j < colunas; j = j + 1)
+    print "Resultado: ";
+    for (i = 0; i < linhas; i = i + 1)
     {
-      print matrizResultado[i][j];
+      print "linha: ";
+      print i;
+      for (j = 0; j < colunas; j = j + 1)
+      {
+        print matrizTransposta[i][j];
+      }
+    }
+  } else {
+    print "Resultado: ";
+    for (i = 0; i < linhas; i = i + 1)
+    {
+      print "linha: ";
+      print i;
+      for (j = 0; j < colunas; j = j + 1)
+      {
+        print matrizResultado[i][j];
+      }
     }
   }
   
